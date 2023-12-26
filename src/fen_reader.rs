@@ -1,5 +1,4 @@
 use crate::types::*;
-use crate::consts::*;
 use crate::board::Board;
 
 impl Board {
@@ -10,6 +9,7 @@ impl Board {
         let castling = parts.next().unwrap();
         let en_passant = parts.next().unwrap();
         let halfmove_clock = parts.next().unwrap();
+        let fullmove_clock = parts.next().unwrap();
         let mut pos: Square = 56;
 
         for piece in pieces.chars() {
@@ -69,6 +69,7 @@ impl Board {
             self.en_passant = 64;
         }
 
-        self.halfmove_clock = halfmove_clock.parse::<Counter>().unwrap();
+        self.halfmove_clock = halfmove_clock.parse::<Clock>().unwrap();
+        self.fullmove_clock = fullmove_clock.parse::<Clock>().unwrap();
     }
 }

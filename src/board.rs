@@ -15,13 +15,14 @@ pub struct Board {
     pub turn: Color,
     pub castling_rights: Castling,
     pub en_passant: Square,
-    pub halfmove_clock: Counter,
+    pub halfmove_clock: Clock,
+    pub fullmove_clock: Clock,
 
-    pub moves: Vec<(Square, Castling, Counter, Piece)>,
+    pub moves: Vec<(Square, Castling, Clock, Piece)>,
 }
 
 impl Board {
-    pub fn u8_to_square(square: Square) -> String {
+    pub fn square_to_string(square: Square) -> String {
         (('a' as Square + (square % 8)) as u8 as char).to_string()
             + &(('1' as Square + (square / 8)) as u8 as char).to_string()
     }
@@ -64,7 +65,9 @@ impl Board {
         }
     }
 
-    pub fn make_move(&mut self, start: Square, end: Square, promotion: PieceType) {
+    pub fn make_move(&mut self, mov: Move, promotion: PieceType) {
+        let (start, end) = mov;
+        
         let start_piece = self.get_piece(start);
         let end_piece   = self.get_piece(end);
 
@@ -128,10 +131,23 @@ impl Board {
 
         // En passant detection
         if start_piece.typ == PieceType::Pawn && i32::abs(start as i32 - end as i32) == 16 {
-            self.en_passant = end;
+            self.en_passant = (start + end) / 2;
         }
 
-        // Castling: Moving king
+        // Castling
+        if start_piece.typ == PieceType::King && i32::abs(start as i32 - end as i32) == 2 {
+            if end == 2 {
+                self.make_move((0, 3), PieceType::Empty);
+            } else if end == 6 {
+                self.make_move((7, 5), PieceType::Empty);
+            } else if end == 62 {
+                self.make_move((63, 61), PieceType::Empty);
+            } else {
+                self.make_move((56, 59), PieceType::Empty);
+            }
+        }
+
+        // Removing castling rights: Moving king
         if start_piece.typ == PieceType::King {
             if start_piece.color == Color::White {
                 self.castling_rights.0.0 = false;
@@ -142,7 +158,7 @@ impl Board {
             }
         }
 
-        // Castling: Moving a rook
+        // Removing castling rights: Moving a rook
         if start_piece.typ == PieceType::Rook {
             if start_piece.color == Color::White {
                 if start == 7 {
@@ -166,6 +182,12 @@ impl Board {
             self.halfmove_clock = 0;
         } else {
             self.halfmove_clock += 1;
+        }
+
+        if self.turn == Color::White {
+            self.turn = Color::Black;
+        } else {
+            self.turn = Color::White;
         }
     }
 }

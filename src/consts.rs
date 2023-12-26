@@ -20,6 +20,7 @@ pub const EMPTY_BOARD: Board = Board {
     castling_rights: ((false, false), (false, false)),
     en_passant: 0,
     halfmove_clock: 0,
+    fullmove_clock: 0,
     
     moves: Vec::new(),
 };

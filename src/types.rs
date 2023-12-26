@@ -1,6 +1,7 @@
 pub type Square = usize;
 pub type Castling = ((bool, bool), (bool, bool));
-pub type Counter = u8;
+pub type Move = (Square, Square);
+pub type Clock = u8;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Color {
