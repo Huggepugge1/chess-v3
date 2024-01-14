@@ -13,6 +13,8 @@ impl Board {
         result.extend(self.generate_queen_moves());
         result.extend(self.generate_king_moves());
         
+        println!("{self:?}");
+        println!("{result:?}");
         result
     }
 
@@ -32,7 +34,6 @@ impl Board {
         if intersection == 0 {
             rays[square]
         } else {
-            println!("{:064b}", rays[square] ^ rays[64 - intersection.leading_zeros() as Square]);
             (rays[square] ^ rays[intersection.leading_zeros() as Square ^ 63]) & flipped_own_pieces
         }
     }
@@ -53,8 +54,8 @@ impl Board {
                     WHITE_PAWN_PUSHES[start_square]
                 } else {
                     BLACK_PAWN_PUSHES[start_square]
-                } & !self.white_pieces & !self.black_pieces;
-                
+                } & !(self.white_pieces | self.black_pieces);
+ 
                 let en_passant_bitboard = if self.en_passant < 64 {
                     1 << self.en_passant
                 } else {
@@ -68,10 +69,37 @@ impl Board {
                 }; 
 
                 for end_square in 0..64 {
+                    let promote_bitboard: u64 = if self.turn == Color::White {
+                        0xff
+                    } else {
+                        0xff << 56
+                    };
                     if push_bitboard & (1 << end_square) > 0 {
-                        moves.push((start_square, end_square));
+                        if 1 << end_square & promote_bitboard > 0 {
+                            for piece in [
+                                PieceType::Rook,
+                                PieceType::Knight,
+                                PieceType::Bishop,
+                                PieceType::Queen,
+                            ] {
+                                moves.push(Move::new(start_square, end_square, piece));
+                            }
+                        } else {
+                            moves.push(Move::new(start_square, end_square, PieceType::Empty));
+                        }
                     } else if attack_bitboard & (1 << end_square) > 0 {
-                        moves.push((start_square, end_square));
+                        if 1 << end_square & promote_bitboard > 0 {
+                            for piece in [
+                                PieceType::Rook,
+                                PieceType::Knight,
+                                PieceType::Bishop,
+                                PieceType::Queen,
+                            ] {
+                                moves.push(Move::new(start_square, end_square, piece));
+                            }
+                        } else {
+                            moves.push(Move::new(start_square, end_square, PieceType::Empty));
+                        }
                     }
                 }
             }
@@ -98,10 +126,14 @@ impl Board {
                     | self.generate_negative_ray_moves(SOUTH_RAYS, start_square, !own_pieces);
                 for end_square in 0..64 {
                     if attack_bitboard & (1 << end_square) > 0 {
-                        moves.push((start_square, end_square));
+                        moves.push(Move::new(start_square, end_square, PieceType::Empty));
                     }
                 }
             }
+        }
+        if moves.len() >= 1 {
+            println!("{self:?}\n{moves:?}");
+            self.print_board();
         }
         moves
     }
@@ -121,7 +153,7 @@ impl Board {
                 let attack_bitboard = KNIGHT_ATTACK_BITBOARDS[start_square] & !own_pieces;
                 for end_square in 0..64 {
                     if attack_bitboard & (1 << end_square) > 0 {
-                        moves.push((start_square, end_square));
+                        moves.push(Move::new(start_square, end_square, PieceType::Empty));
                     }
                 }
             }
@@ -148,7 +180,7 @@ impl Board {
                     | self.generate_negative_ray_moves(SOUTH_EAST_RAYS, start_square, !own_pieces);
                 for end_square in 0..64 {
                     if attack_bitboard & (1 << end_square) > 0 {
-                        moves.push((start_square, end_square));
+                        moves.push(Move::new(start_square, end_square, PieceType::Empty));
                     }
                 }
             }
@@ -179,7 +211,7 @@ impl Board {
                     | self.generate_negative_ray_moves(SOUTH_EAST_RAYS, start_square, !own_pieces);
                 for end_square in 0..64 {
                     if attack_bitboard & (1 << end_square) > 0 {
-                        moves.push((start_square, end_square));
+                        moves.push(Move::new(start_square, end_square, PieceType::Empty));
                     }
                 }
             }
@@ -202,7 +234,7 @@ impl Board {
                 let attack_bitboard = KING_ATTACK_BITBOARDS[start_square] & !own_pieces;
                 for end_square in 0..64 {
                     if attack_bitboard & (1 << end_square) > 0 {
-                        moves.push((start_square, end_square));
+                        moves.push(Move::new(start_square, end_square, PieceType::Empty));
                     }
                 }
             }
@@ -211,22 +243,22 @@ impl Board {
         if self.turn == Color::White {
             if self.castling_rights.0.0
                 && 0b01100000 & (self.white_pieces | self.black_pieces) == 0 {
-                moves.push((4, 6));
+                moves.push(Move::new(4, 6, PieceType::Empty));
             }
             
             if self.castling_rights.0.1
                 && 0b00001110 & (self.white_pieces | self.black_pieces) == 0 {
-                moves.push((4, 2));
+                moves.push(Move::new(4, 2, PieceType::Empty));
             }
         } else {
             if self.castling_rights.1.0
                 && (0b01100000 << 56) & (self.white_pieces | self.black_pieces) == 0 {
-                moves.push((60, 62));
+                moves.push(Move::new(60, 62, PieceType::Empty));
             }
             
             if self.castling_rights.1.1
                 && (0b00001110 << 56) & (self.white_pieces | self.black_pieces) == 0 {
-                moves.push((60, 58));
+                moves.push(Move::new(60, 58, PieceType::Empty));
             }
         }
         moves

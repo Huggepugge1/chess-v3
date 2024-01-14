@@ -1,6 +1,12 @@
 use crate::types::*;
 use crate::board::Board;
 
+pub const EMPTY_MOVE: Move = Move {
+    start_square: 64,
+    end_square: 64,
+    promotion: PieceType::Empty,
+};
+
 pub const EMPTY_PIECE: Piece = Piece {
     typ: PieceType::Empty,
     color: Color::Empty,

@@ -201,6 +201,7 @@ fn get_squares(bitboard: u64) -> Vec<usize> {
 }
 
 fn main() {
+    let black_pawn_pushes = generate_black_pawn_pushes();
     // let rays: [u64; 64] = generate_east_rays();
     // let rays: [u64; 64] = generate_north_rays();
     // let rays: [u64; 64] = generate_west_rays();
@@ -208,10 +209,10 @@ fn main() {
     // let rays: [u64; 64] = generate_north_east_rays();
     // let rays: [u64; 64] = generate_north_west_rays();
     // let rays: [u64; 64] = generate_south_east_rays();
-    let rays: [u64; 64] = generate_south_west_rays();
-    for ray in rays {
-        println!("{:?}", get_squares(ray));
+    // let rays: [u64; 64] = generate_south_west_rays();
+    for push in black_pawn_pushes {
+        println!("{:?}", get_squares(push));
     }
-    println!("{:?}", rays);
+    println!("{:?}", black_pawn_pushes);
 }
 
