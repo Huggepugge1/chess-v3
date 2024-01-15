@@ -1,8 +1,10 @@
 use crate::types::*;
+use crate::consts::*;
 use crate::board::Board;
 
 impl Board {
     pub fn load_fen(&mut self, fen: String) {
+        *self = EMPTY_BOARD;
         let mut parts = fen.split(" ");
         let pieces = parts.next().unwrap();
         let turn = parts.next().unwrap();

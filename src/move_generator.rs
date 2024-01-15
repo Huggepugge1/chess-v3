@@ -4,6 +4,7 @@ use crate::attack_bitboards::*;
 
 impl Board {
     pub fn generate_moves(&self) -> Vec<Move> {
+
         let mut result: Vec<Move> = Vec::new();
 
         result.extend(self.generate_pawn_moves());
@@ -13,8 +14,6 @@ impl Board {
         result.extend(self.generate_queen_moves());
         result.extend(self.generate_king_moves());
         
-        println!("{self:?}");
-        println!("{result:?}");
         result
     }
 
@@ -74,8 +73,9 @@ impl Board {
                     } else {
                         0xff << 56
                     };
+
                     if push_bitboard & (1 << end_square) > 0 {
-                        if 1 << end_square & promote_bitboard > 0 {
+                        if (1 << end_square) & promote_bitboard > 0 {
                             for piece in [
                                 PieceType::Rook,
                                 PieceType::Knight,
@@ -83,6 +83,11 @@ impl Board {
                                 PieceType::Queen,
                             ] {
                                 moves.push(Move::new(start_square, end_square, piece));
+                            }
+                        } else if (((1 << start_square) | (1 << end_square)) & double_push_bitboard).count_zeros() == 2 {
+                            println!("{}, {}", start_square, end_square);
+                            if (self.white_pieces | self.black_pieces) & (1 << ((start_square + end_square) / 2)) == 0 {
+                                moves.push(Move::new(start_square, end_square, PieceType::Empty));
                             }
                         } else {
                             moves.push(Move::new(start_square, end_square, PieceType::Empty));
@@ -130,10 +135,6 @@ impl Board {
                     }
                 }
             }
-        }
-        if moves.len() >= 1 {
-            println!("{self:?}\n{moves:?}");
-            self.print_board();
         }
         moves
     }

@@ -26,6 +26,17 @@ pub fn evaluate(board: &Board) -> f32 {
     result
 }
 
+fn is_legal_position(board: &mut Board, own_pieces: u64, castling_bitboard: u64) -> bool {
+    let check_moves = board.generate_moves();
+    for check_mov in check_moves {
+        if ((board.kings & own_pieces) | castling_bitboard) & (1 << check_mov.end_square) > 0 {
+            return false;
+        }
+    }
+
+    true
+}
+
 pub fn search(depth: i32, board: &mut Board) -> Move {
     if depth == -1 {
         min_max(4, board)[0].clone().0
@@ -34,7 +45,7 @@ pub fn search(depth: i32, board: &mut Board) -> Move {
     }
 }
 
-pub fn perft(depth: i32, board: &mut Board) -> i32 {
+pub fn perft(start_depth: i32, depth: i32, board: &mut Board) -> i32 {
     if depth == 0 {
         return 1
     }
@@ -46,6 +57,7 @@ pub fn perft(depth: i32, board: &mut Board) -> i32 {
     } else {
         board.black_pieces
     };
+
     for mov in board.generate_moves() {
         let mut castling_bitboard = 0;
         if board.get_piece(mov.start_square).typ == PieceType::King 
@@ -57,25 +69,17 @@ pub fn perft(depth: i32, board: &mut Board) -> i32 {
 
         board.make_move(mov.clone());
         if is_legal_position(board, own_pieces, castling_bitboard) {
-            result += perft(depth - 1, board);
+            let current_move = perft(start_depth, depth - 1, board);
+            result += current_move;
+
+            if start_depth == depth {
+                println!("{}: {}", Board::print_move(&mov), current_move);
+            }
         }
         board.unmake_move(mov);
     }
 
-    board.print_board();
-
     result
-}
-
-fn is_legal_position(board: &mut Board, own_pieces: u64, castling_bitboard: u64) -> bool {
-    let check_moves = board.generate_moves();
-    for check_mov in check_moves {
-        if ((board.kings & own_pieces) | castling_bitboard) & (1 << check_mov.end_square) > 0 {
-            return false;
-        }
-    }
-
-    true
 }
 
 fn min_max(depth: i32, board: &mut Board) -> Vec<(Move, f32)> {

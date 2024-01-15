@@ -62,12 +62,12 @@ impl Board {
         }
     }
 
-    pub fn print_move(mov: Move) {
-        println!(
+    pub fn print_move(mov: &Move) -> String {
+        format!(
             "{}{}",
             Self::square_to_string(mov.start_square),
             Self::square_to_string(mov.end_square)
-        );
+        )
     }
 
     pub fn get_piece(&self, square: Square) -> Piece {
@@ -215,8 +215,6 @@ impl Board {
 
         // Removing castling rights: Moving a rook
         if start_piece.typ == PieceType::Rook {
-            println!("{self:?}");
-            println!("{mov:?}");
             if start_piece.color == Color::White {
                 if start_square == 7 {
                     self.castling_rights.0.0 = false;
@@ -241,9 +239,7 @@ impl Board {
             self.halfmove_clock += 1;
         }
 
-        println!("{:?}", self.turn);
         self.change_turn();
-        println!("{:?}\n", self.turn);
         self.moves.push((last_en_passant, last_castling_rights, last_halfmove_clock, end_piece));
     }
 
@@ -307,5 +303,6 @@ impl Board {
                 PieceType::Empty  => panic!("Tried to restore an empty piece!"),
             }
         }
+        self.change_turn();
     }
 }
