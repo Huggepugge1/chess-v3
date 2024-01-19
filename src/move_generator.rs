@@ -50,9 +50,17 @@ impl Board {
         for start_square in 0..64 {
             if pawns & (1 << start_square) > 0 {
                 let push_bitboard = if self.turn == Color::White {
-                    WHITE_PAWN_PUSHES[start_square]
+                    if WHITE_PAWN_PUSHES[start_square].count_ones() == 2 {
+                        self.generate_positive_ray_moves(WHITE_PAWN_PUSHES, start_square, !own_pieces)
+                    } else {
+                        WHITE_PAWN_PUSHES[start_square]
+                    }
                 } else {
-                    BLACK_PAWN_PUSHES[start_square]
+                    if BLACK_PAWN_PUSHES[start_square].count_ones() == 2 {
+                        self.generate_negative_ray_moves(BLACK_PAWN_PUSHES, start_square, !own_pieces)
+                    } else {
+                        BLACK_PAWN_PUSHES[start_square]
+                    }
                 } & !(self.white_pieces | self.black_pieces);
  
                 let en_passant_bitboard = if self.en_passant < 64 {
@@ -84,16 +92,11 @@ impl Board {
                             ] {
                                 moves.push(Move::new(start_square, end_square, piece));
                             }
-                        } else if (((1 << start_square) | (1 << end_square)) & double_push_bitboard).count_zeros() == 2 {
-                            println!("{}, {}", start_square, end_square);
-                            if (self.white_pieces | self.black_pieces) & (1 << ((start_square + end_square) / 2)) == 0 {
-                                moves.push(Move::new(start_square, end_square, PieceType::Empty));
-                            }
                         } else {
                             moves.push(Move::new(start_square, end_square, PieceType::Empty));
                         }
                     } else if attack_bitboard & (1 << end_square) > 0 {
-                        if 1 << end_square & promote_bitboard > 0 {
+                        if (1 << end_square) & promote_bitboard > 0 {
                             for piece in [
                                 PieceType::Rook,
                                 PieceType::Knight,

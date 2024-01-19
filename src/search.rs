@@ -26,10 +26,16 @@ pub fn evaluate(board: &Board) -> f32 {
     result
 }
 
-fn is_legal_position(board: &mut Board, own_pieces: u64, castling_bitboard: u64) -> bool {
+fn is_legal_position(board: &mut Board, castling_bitboard: u64) -> bool {
+    let own_pieces = if board.turn == Color::White {
+        board.black_pieces
+    } else {
+        board.white_pieces
+    };
+
     let check_moves = board.generate_moves();
-    for check_mov in check_moves {
-        if ((board.kings & own_pieces) | castling_bitboard) & (1 << check_mov.end_square) > 0 {
+    for check_move in check_moves {
+        if ((board.kings & own_pieces) | castling_bitboard) & (1 << check_move.end_square) > 0 {
             return false;
         }
     }
@@ -52,12 +58,6 @@ pub fn perft(start_depth: i32, depth: i32, board: &mut Board) -> i32 {
 
     let mut result = 0;
 
-    let own_pieces = if board.turn == Color::White {
-        board.white_pieces
-    } else {
-        board.black_pieces
-    };
-
     for mov in board.generate_moves() {
         let mut castling_bitboard = 0;
         if board.get_piece(mov.start_square).typ == PieceType::King 
@@ -68,7 +68,7 @@ pub fn perft(start_depth: i32, depth: i32, board: &mut Board) -> i32 {
         }
 
         board.make_move(mov.clone());
-        if is_legal_position(board, own_pieces, castling_bitboard) {
+        if is_legal_position(board, castling_bitboard) {
             let current_move = perft(start_depth, depth - 1, board);
             result += current_move;
 
@@ -88,11 +88,6 @@ fn min_max(depth: i32, board: &mut Board) -> Vec<(Move, f32)> {
     } else {
         let moves = board.generate_moves();
         let mut result: Vec<(Move, f32)> = Vec::new();
-        let own_pieces = if board.turn == Color::White {
-            board.white_pieces
-        } else {
-            board.black_pieces
-        };
 
         for mov in moves.clone() {
             let mut castling_bitboard = 0;
@@ -105,7 +100,7 @@ fn min_max(depth: i32, board: &mut Board) -> Vec<(Move, f32)> {
 
             board.make_move(mov.clone());
             
-            if is_legal_position(board, own_pieces, castling_bitboard) {
+            if is_legal_position(board, castling_bitboard) {
                 let min_max_result = min_max(depth - 1, board);
 
                 if min_max_result.len() > 0 {
