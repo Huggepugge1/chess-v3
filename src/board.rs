@@ -244,6 +244,7 @@ impl Board {
     }
 
     pub fn unmake_move(&mut self, mov: Move) {
+        let start_kings = self.kings;
         let captured_piece;
         (
             self.en_passant,
@@ -302,6 +303,9 @@ impl Board {
                 PieceType::King   => self.kings   ^= 1 << end_square,
                 PieceType::Empty  => panic!("Tried to restore an empty piece!"),
             }
+        }
+        if start_kings != self.kings {
+            println!("{:?}", mov);
         }
         self.change_turn();
     }

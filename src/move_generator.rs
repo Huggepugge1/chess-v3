@@ -46,23 +46,26 @@ impl Board {
         };
 
         let pawns = own_pieces & self.pawns;
+        let pieces = self.white_pieces | self.black_pieces;
             
         for start_square in 0..64 {
             if pawns & (1 << start_square) > 0 {
-                let push_bitboard = if self.turn == Color::White {
-                    if WHITE_PAWN_PUSHES[start_square].count_ones() == 2 {
-                        self.generate_positive_ray_moves(WHITE_PAWN_PUSHES, start_square, !own_pieces)
-                    } else {
-                        WHITE_PAWN_PUSHES[start_square]
+                let push_bitboard: u64;
+                let mut result: u64;
+ 
+                if self.turn == Color::White {
+                    result = WHITE_PAWN_PUSHES[start_square] & !pieces;
+                    if start_square / 8 == 1 && result > 0 {
+                        result |= WHITE_PAWN_PUSHES[start_square + 8] & !pieces;
                     }
                 } else {
-                    if BLACK_PAWN_PUSHES[start_square].count_ones() == 2 {
-                        self.generate_negative_ray_moves(BLACK_PAWN_PUSHES, start_square, !own_pieces)
-                    } else {
-                        BLACK_PAWN_PUSHES[start_square]
+                    result = BLACK_PAWN_PUSHES[start_square] & !pieces;
+                    if start_square / 8 == 6 && result > 0 {
+                        result |= BLACK_PAWN_PUSHES[start_square - 8] & !pieces;
                     }
-                } & !(self.white_pieces | self.black_pieces);
- 
+                }
+                push_bitboard = result;
+
                 let en_passant_bitboard = if self.en_passant < 64 {
                     1 << self.en_passant
                 } else {

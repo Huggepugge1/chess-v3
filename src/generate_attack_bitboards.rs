@@ -28,9 +28,6 @@ fn generate_white_pawn_pushes() -> [u64; 64] {
     let mut bitboards: [u64; 64] = [0; 64];
     for square in 8..56 {
         bitboards[square] = 1 << (square + 8);
-        if square / 8 == 1 {
-            bitboards[square] |= 1 << (square + 16);
-        }
     }
 
     bitboards
@@ -40,9 +37,6 @@ fn generate_black_pawn_pushes() -> [u64; 64] {
     let mut bitboards: [u64; 64] = [0; 64];
     for square in 8..56 {
         bitboards[square] = 1 << (square - 8);
-        if square / 8 == 6 {
-            bitboards[square] |= 1 << (square - 16);
-        }
     }
 
     bitboards
@@ -201,18 +195,17 @@ fn get_squares(bitboard: u64) -> Vec<usize> {
 }
 
 fn main() {
-    // let black_pawn_pushes = generate_black_pawn_pushes();
+    let white_pawn_pushes = generate_white_pawn_pushes();
+    let black_pawn_pushes = generate_black_pawn_pushes();
     // let rays: [u64; 64] = generate_east_rays();
     // let rays: [u64; 64] = generate_north_rays();
     // let rays: [u64; 64] = generate_west_rays();
     // let rays: [u64; 64] = generate_south_rays();
-    let rays: [u64; 64] = generate_north_east_rays();
+    // let rays: [u64; 64] = generate_north_east_rays();
     // let rays: [u64; 64] = generate_north_west_rays();
     // let rays: [u64; 64] = generate_south_east_rays();
     // let rays: [u64; 64] = generate_south_west_rays();
-    for ray in rays {
-        println!("{:?}", get_squares(ray));
-    }
-    println!("{:?}", rays);
+    println!("{:?}", white_pawn_pushes);
+    println!("{:?}", black_pawn_pushes);
 }
 
