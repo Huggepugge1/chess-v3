@@ -67,6 +67,8 @@ pub fn perft(start_depth: i32, depth: i32, board: &mut Board) -> i32 {
             }
         }
 
+        let board_copy = &board.clone();
+
         board.make_move(mov.clone());
         if is_legal_position(board, castling_bitboard) {
             let current_move = perft(start_depth, depth - 1, board);
@@ -76,7 +78,12 @@ pub fn perft(start_depth: i32, depth: i32, board: &mut Board) -> i32 {
                 println!("{}: {}", Board::print_move(&mov), current_move);
             }
         }
-        board.unmake_move(mov);
+        board.unmake_move(mov.clone());
+        if board != board_copy {
+            println!("{:?}", mov);
+            println!("OLD: {:?}", board_copy);
+            println!("NEW: {:?}", board);
+        }
     }
 
     result

@@ -80,9 +80,9 @@ impl Board {
 
                 for end_square in 0..64 {
                     let promote_bitboard: u64 = if self.turn == Color::White {
-                        0xff
-                    } else {
                         0xff << 56
+                    } else {
+                        0xff
                     };
 
                     if push_bitboard & (1 << end_square) > 0 {

@@ -1,7 +1,7 @@
 use crate::types::*;
 use crate::consts::*;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Board {
     pub white_pieces: u64,
     pub black_pieces: u64,
@@ -18,8 +18,8 @@ pub struct Board {
     pub halfmove_clock: Clock,
     pub fullmove_clock: Clock,
 
-    //              EP      Castling  HM     Captured
-    pub moves: Vec<(Square, Castling, Clock, Piece)>,
+    //              EP      Castling  HM     Captured   EP Capture
+    pub moves: Vec<(Square, Castling, Clock, Piece,     (Square, Piece))>,
 }
 
 impl Board {
@@ -63,10 +63,18 @@ impl Board {
     }
 
     pub fn print_move(mov: &Move) -> String {
+        let promotion: char = match mov.promotion {
+            PieceType::Rook   => 'r',
+            PieceType::Knight => 'n',
+            PieceType::Bishop => 'b',
+            PieceType::Queen  => 'q',
+            _ => ' ',
+        };
         format!(
-            "{}{}",
+            "{}{}{}",
             Self::square_to_string(mov.start_square),
-            Self::square_to_string(mov.end_square)
+            Self::square_to_string(mov.end_square),
+            promotion
         )
     }
 
@@ -81,9 +89,7 @@ impl Board {
             };
 
         let typ: PieceType =
-            if color == Color::Empty {
-                PieceType::Empty
-            } else if self.pawns & (1 << square) > 0 {
+            if self.pawns & (1 << square) > 0 {
                 PieceType::Pawn
             } else if self.rooks & (1 << square) > 0 {
                 PieceType::Rook
@@ -93,8 +99,10 @@ impl Board {
                 PieceType::Bishop
             } else if self.queens & (1 << square) > 0 {
                 PieceType::Queen
-            } else {
+            } else if self.kings & (1 << square) > 0 {
                 PieceType::King
+            } else {
+                PieceType::Empty
             };
 
         return Piece {
@@ -111,6 +119,28 @@ impl Board {
         }
     }
 
+    pub fn move_piece(&mut self, start_square: Square, end_square: Square) {
+        let from_to_bb = (1 << start_square) ^ (1 << end_square);
+
+        let piece = self.get_piece(start_square);
+        
+        match piece.color {
+            Color::White => self.white_pieces ^= from_to_bb,
+            Color::Black => self.black_pieces ^= from_to_bb,
+            Color::Empty => panic!("Tried to move an empty piece!"),
+        }
+        
+        match piece.typ {
+            PieceType::Pawn   => self.pawns   ^= from_to_bb,
+            PieceType::Rook   => self.rooks   ^= from_to_bb,
+            PieceType::Knight => self.knights ^= from_to_bb,
+            PieceType::Bishop => self.bishops ^= from_to_bb,
+            PieceType::Queen  => self.queens  ^= from_to_bb,
+            PieceType::King   => self.kings   ^= from_to_bb,
+            PieceType::Empty  => panic!("Tried to move an empty piece!"),
+        }
+    }
+
     pub fn make_move(&mut self, mov: Move) {
         let last_en_passant = self.en_passant;
         let last_castling_rights = self.castling_rights;
@@ -121,23 +151,8 @@ impl Board {
         let start_piece = self.get_piece(start_square);
         let end_piece   = self.get_piece(end_square);
 
-        let from_to_bb = (1 << start_square) ^ (1 << end_square);
-        match start_piece.color {
-            Color::White => self.white_pieces ^= from_to_bb,
-            Color::Black => self.black_pieces ^= from_to_bb,
-            Color::Empty => panic!("Tried to move an empty piece!"),
-        }
-        
-        match start_piece.typ {
-            PieceType::Pawn   => self.pawns   ^= from_to_bb,
-            PieceType::Rook   => self.rooks   ^= from_to_bb,
-            PieceType::Knight => self.knights ^= from_to_bb,
-            PieceType::Bishop => self.bishops ^= from_to_bb,
-            PieceType::Queen  => self.queens  ^= from_to_bb,
-            PieceType::King   => self.kings   ^= from_to_bb,
-            PieceType::Empty  => panic!("Tried to move an empty piece!"),
-        }
-        
+        let mut en_passant_capture = (64, EMPTY_PIECE);
+
         if end_piece != EMPTY_PIECE {
             match end_piece.color {
                 Color::White => self.white_pieces ^= 1 << end_square,
@@ -152,9 +167,11 @@ impl Board {
                 PieceType::Bishop => self.bishops ^= 1 << end_square,
                 PieceType::Queen  => self.queens  ^= 1 << end_square,
                 PieceType::King   => self.kings   ^= 1 << end_square,
-                PieceType::Empty  => panic!("Tried to capture an empty piece!"),
+                PieceType::Empty  => {self.print_board(); println!("{:?} {:?} {:?}", mov, start_piece, end_piece); panic!("Tried to capture an empty piece!")},
             }
         }
+
+        self.move_piece(start_square, end_square);
 
         if promotion != PieceType::Empty {
             self.pawns ^= 1 << end_square;
@@ -170,14 +187,24 @@ impl Board {
         // En passant capture
         if start_piece.typ == PieceType::Pawn && end_piece == EMPTY_PIECE 
             && (start_square % 8) as i32 - (end_square % 8) as i32 != 0 {
-            let enemy_pos = 1 << (start_square + end_square % 8 - 8);
-            self.pawns &= !enemy_pos;
+            let enemy_pos = 
+                if start_piece.color == Color::White {
+                    end_square - 8
+                } else {
+                    end_square + 8
+                };
+
+            let enemy_piece = self.get_piece(enemy_pos);
+
+            self.pawns ^= 1 << enemy_pos;
             
             match start_piece.color {
-                Color::White => self.black_pieces ^= enemy_pos,
-                Color::Black => self.white_pieces ^= enemy_pos,
+                Color::White => self.black_pieces ^= 1 << enemy_pos,
+                Color::Black => self.white_pieces ^= 1 << enemy_pos,
                 Color::Empty => panic!("Tried to capture an empty piece!"),
             }
+
+            en_passant_capture = (enemy_pos, enemy_piece);
         }
 
         // En passant detection
@@ -190,16 +217,14 @@ impl Board {
         // Castling
         if start_piece.typ == PieceType::King && i32::abs(start_square as i32 - end_square as i32) == 2 {
             if end_square == 2 {
-                self.make_move(Move::new(0, 3, PieceType::Empty));
+                self.move_piece(0, 3);
             } else if end_square == 6 {
-                self.make_move(Move::new(7, 5, PieceType::Empty));
+                self.move_piece(7, 5);
             } else if end_square == 62 {
-                self.make_move(Move::new(63, 61, PieceType::Empty));
+                self.move_piece(63, 61);
             } else {
-                self.make_move(Move::new(56, 59, PieceType::Empty));
+                self.move_piece(56, 59);
             }
-
-            self.change_turn();
         }
 
         // Removing castling rights: Moving king
@@ -240,17 +265,18 @@ impl Board {
         }
 
         self.change_turn();
-        self.moves.push((last_en_passant, last_castling_rights, last_halfmove_clock, end_piece));
+        self.moves.push((last_en_passant, last_castling_rights, last_halfmove_clock, end_piece, en_passant_capture));
     }
 
     pub fn unmake_move(&mut self, mov: Move) {
-        let start_kings = self.kings;
         let captured_piece;
+        let en_passant_capture;
         (
             self.en_passant,
             self.castling_rights,
             self.halfmove_clock,
-            captured_piece
+            captured_piece,
+            en_passant_capture,
         ) = self.moves.pop().unwrap();
         let Move {start_square, end_square, promotion} = mov;
         
@@ -261,7 +287,7 @@ impl Board {
         match piece.color {
             Color::White => self.white_pieces ^= from_to_bb,
             Color::Black => self.black_pieces ^= from_to_bb,
-            Color::Empty => panic!("Tried to move an empty piece!"),
+            Color::Empty => {println!("{:?}", (self.moves.clone(), mov)); self.print_board(); panic!("Tried to move an empty piece!")},
         }
 
         // Piece did not promote
@@ -304,9 +330,29 @@ impl Board {
                 PieceType::Empty  => panic!("Tried to restore an empty piece!"),
             }
         }
-        if start_kings != self.kings {
-            println!("{:?}", mov);
+
+        if en_passant_capture.1 != EMPTY_PIECE {
+            self.pawns ^= 1 << en_passant_capture.0;
+            match en_passant_capture.1.color {
+                Color::White => self.white_pieces ^= 1 << en_passant_capture.0,
+                Color::Black => self.black_pieces ^= 1 << en_passant_capture.0,
+                Color::Empty => panic!("Tried to restore an empty piece!"),
+            }
         }
+
+        if piece.typ == PieceType::King && i32::abs(start_square as i32 - end_square as i32) == 2 {
+            if end_square == 2 {
+                self.move_piece(3, 0);
+            } else if end_square == 6 {
+                self.move_piece(5, 7);
+            } else if end_square == 62 {
+                self.move_piece(61, 63);
+            } else {
+                self.move_piece(59, 56);
+            }
+        }
+
+
         self.change_turn();
     }
 }

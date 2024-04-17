@@ -58,7 +58,6 @@ fn main() {
                         "infinite" => println!("{}", board::Board::print_move(&search::search(-1, &mut board))),
                         "depth" => {
                             if command.len() >= 3 {
-                                println!("{:?}", command);
                                 let depth: i32 = command[2].replace("\n", "").replace("\r", "").parse().unwrap();
                                 println!("{}", board::Board::print_move(&search::search(depth, &mut board)));
                             }
