@@ -1,3 +1,5 @@
+use tokio;
+
 mod board;
 mod consts;
 mod types;
@@ -5,10 +7,14 @@ mod fen_reader;
 mod move_generator;
 mod attack_bitboards;
 mod search;
+mod piece_square_tables;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let mut board: board::Board = consts::EMPTY_BOARD;
     board.load_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string());
+    const DEFAULT_DEPTH: i32 = -1;
+    const DEFAULT_MOVETIME: u64 = 0;
 
     loop {
         let mut line = String::new();
@@ -17,6 +23,7 @@ fn main() {
         match command[0].replace("\n", "").replace("\r", "").as_str() {
             "isready" => println!("readyok"),
             "uci" => (),
+            "quit" => break,
             "printboard" => board.print_board(),
             "ucinewgame" => (),
             "position" => {
@@ -52,14 +59,20 @@ fn main() {
             }
             "go" => {
                 if command.len() == 1 {
-                    println!("{}", board::Board::print_move(&search::search(-1, &mut board, true)));
+                    println!("bestmove {}", board::Board::print_move(&search::search(DEFAULT_DEPTH, DEFAULT_MOVETIME, &mut board, true).await));
                 } else {
                     match command[1].replace("\n", "").replace("\r", "").as_str() {
-                        "infinite" => println!("{}", board::Board::print_move(&search::search(-1, &mut board, true))),
+                        "infinite" => println!("bestmove {}", board::Board::print_move(&search::search(DEFAULT_DEPTH, DEFAULT_MOVETIME, &mut board, true).await)),
                         "depth" => {
                             if command.len() >= 3 {
                                 let depth: i32 = command[2].replace("\n", "").replace("\r", "").parse().unwrap();
-                                println!("{}", board::Board::print_move(&search::search(depth, &mut board, true)));
+                                println!("bestmove {}", board::Board::print_move(&search::search(depth, DEFAULT_MOVETIME, &mut board, true).await));
+                            }
+                        },
+                        "movetime" => {
+                            if command.len() >= 3 {
+                                let movetime: u64 = command[2].replace("\n", "").replace("\r", "").parse().unwrap();
+                                println!("bestmove {}", board::Board::print_move(&search::search(DEFAULT_DEPTH, movetime, &mut board, true).await));
                             }
                         },
                         "perft" => {

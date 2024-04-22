@@ -1,7 +1,7 @@
 use crate::types::*;
 use crate::consts::*;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Board {
     pub white_pieces: u64,
     pub black_pieces: u64,

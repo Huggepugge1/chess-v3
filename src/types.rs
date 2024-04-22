@@ -1,15 +1,19 @@
+use crate::board::Board;
+
+use std::collections::HashMap;
+
 pub type Square = usize;
 pub type Castling = ((bool, bool), (bool, bool));
 pub type Clock = u8;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Color {
     Empty,
     White,
     Black,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum PieceType {
     Empty,
     Pawn,
@@ -20,7 +24,7 @@ pub enum PieceType {
     King,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Move {
     pub start_square: Square,
     pub end_square:   Square,
@@ -37,8 +41,15 @@ impl Move {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Piece {
     pub typ: PieceType,
     pub color: Color,
 }
+
+pub struct TranspositionTableContent {
+    pub result: Vec<(Move, i32)>,
+    pub depth: i32,
+}
+
+pub type TranspositionTable = HashMap<Board, TranspositionTableContent>;
