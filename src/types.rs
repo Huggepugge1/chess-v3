@@ -2,7 +2,7 @@ pub type Square = usize;
 pub type Castling = ((bool, bool), (bool, bool));
 pub type Clock = u8;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Color {
     Empty,
     White,

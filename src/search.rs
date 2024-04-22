@@ -20,7 +20,7 @@ pub fn evaluate(board: &Board) -> i32 {
             Color::White => 1,
             Color::Black => -1,
             Color::Empty => 0,
-        }
+        };
     }
 
     result
@@ -43,18 +43,37 @@ fn is_legal_position(board: &mut Board, castling_bitboard: u64) -> bool {
     true
 }
 
-pub fn search(depth: i32, board: &mut Board) -> Move {
+pub fn search(max_depth: i32, board: &mut Board, alpha_beta: bool) -> Move {
     let best =
         if board.turn == Color::White {
-            i32::MIN
-        } else {
             i32::MAX
+        } else {
+            i32::MIN
         };
-    if depth == -1 {
-        min_max(4, board, best)[0].clone().0
+    let mut result = Vec::new();
+    let mut moves = board.generate_moves();
+    let mut depth = 1;
+    if max_depth == -1 {
+        let max_depth = 5;
+        while depth < max_depth {
+            result = min_max(depth, board, moves, best, alpha_beta);
+            moves = result.iter().map(|(mov, _)| mov.clone()).collect::<Vec<Move>>();
+            depth += 1;
+        }
     } else {
-        min_max(depth, board, best)[0].clone().0
+        while depth < max_depth {
+            result = min_max(depth, board, moves, best, alpha_beta);
+            moves = result.iter().map(|(mov, _)| mov.clone()).collect::<Vec<Move>>();
+            depth += 1;
+        }
     }
+    result[0].0.clone()
+}
+
+pub fn alpha_beta_test(board: &mut Board) {
+    let depth = 1;
+    println!("{}", Board::print_move(&search(depth, board, false)));
+    println!("{}", Board::print_move(&search(depth, board, true)));
 }
 
 pub fn perft(start_depth: i32, depth: i32, board: &mut Board) -> i32 {
@@ -88,11 +107,10 @@ pub fn perft(start_depth: i32, depth: i32, board: &mut Board) -> i32 {
     result
 }
 
-fn min_max(depth: i32, board: &mut Board, parent_score: i32) -> Vec<(Move, i32)> {
+fn min_max(depth: i32, board: &mut Board, moves: Vec<Move>, parent_score: i32, alpha_beta: bool) -> Vec<(Move, i32)> {
     if depth == 0 {
         vec![(EMPTY_MOVE, evaluate(board))]
     } else {
-        let moves = board.generate_moves();
         let mut result = Vec::new();
         let mut best =
             if board.turn == Color::White {
@@ -100,6 +118,8 @@ fn min_max(depth: i32, board: &mut Board, parent_score: i32) -> Vec<(Move, i32)>
             } else {
                 i32::MAX
             };
+
+        let turn = board.turn;
 
         for mov in moves.clone() {
             let mut castling_bitboard = 0;
@@ -113,23 +133,25 @@ fn min_max(depth: i32, board: &mut Board, parent_score: i32) -> Vec<(Move, i32)>
             board.make_move(mov.clone());
             
             if is_legal_position(board, castling_bitboard) {
-                let min_max_result = min_max(depth - 1, board, best);
+                let moves = board.generate_moves();
+                let min_max_result = min_max(depth - 1, board, moves, best, alpha_beta);
 
                 if min_max_result.len() > 0 {
                     result.push((mov.clone(), min_max_result[0].1));
                     
-                    if ()
-                    if board.turn == Color::White {
-                        best = i32::min(best, min_max_result[0].1);
-                        if parent_score > best {
-                            board.unmake_move(mov);
-                            break;
-                        }
-                    } else {
-                        best = i32::max(best, min_max_result[0].1);
-                        if parent_score < best {
-                            board.unmake_move(mov);
-                            break;
+                    if alpha_beta {
+                        if turn == Color::White {
+                            best = i32::max(best, min_max_result[0].1);
+                            if parent_score < best {
+                                board.unmake_move(mov);
+                                break;
+                            }
+                        } else {
+                            best = i32::min(best, min_max_result[0].1);
+                            if parent_score > best {
+                                board.unmake_move(mov);
+                                break;
+                            }
                         }
                     }
                 }
@@ -137,9 +159,9 @@ fn min_max(depth: i32, board: &mut Board, parent_score: i32) -> Vec<(Move, i32)>
 
             board.unmake_move(mov);
         }
-
+        
         result.sort_by(|(_, score1), (_, score2)| 
-            if board.turn == Color::White {
+            if turn == Color::White {
                 score2.partial_cmp(score1).unwrap()
             } else {
                 score1.partial_cmp(score2).unwrap()

@@ -52,14 +52,14 @@ fn main() {
             }
             "go" => {
                 if command.len() == 1 {
-                    println!("{}", board::Board::print_move(&search::search(-1, &mut board)));
+                    println!("{}", board::Board::print_move(&search::search(-1, &mut board, true)));
                 } else {
                     match command[1].replace("\n", "").replace("\r", "").as_str() {
-                        "infinite" => println!("{}", board::Board::print_move(&search::search(-1, &mut board))),
+                        "infinite" => println!("{}", board::Board::print_move(&search::search(-1, &mut board, true))),
                         "depth" => {
                             if command.len() >= 3 {
                                 let depth: i32 = command[2].replace("\n", "").replace("\r", "").parse().unwrap();
-                                println!("{}", board::Board::print_move(&search::search(depth, &mut board)));
+                                println!("{}", board::Board::print_move(&search::search(depth, &mut board, true)));
                             }
                         },
                         "perft" => {
@@ -69,6 +69,9 @@ fn main() {
                             } else {
                                 println!("\"go perft\" needs **ONE** argument");
                             }
+                        },
+                        "abtest" => {
+                            search::alpha_beta_test(&mut board);
                         }
                         x => println!("{x} is either not implemented or not a valid argument for \"go\""),
                     }
